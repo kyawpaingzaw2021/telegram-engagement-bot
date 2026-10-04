@@ -7,6 +7,7 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from bot.handlers import register_handlers
+from bot.middlewares.user import UserMiddleware
 from core.config import settings
 from core.logger import setup_logger, logger
 
@@ -20,8 +21,11 @@ async def main():
     )
     dp = Dispatcher(storage=MemoryStorage())
 
-    root_router = dp
-    register_handlers(root_router)
+    # Middleware — user auto-create
+    dp.message.middleware(UserMiddleware())
+    dp.callback_query.middleware(UserMiddleware())
+
+    register_handlers(dp)
 
     logger.info("Bot starting...")
     await bot.delete_webhook(drop_pending_updates=True)
