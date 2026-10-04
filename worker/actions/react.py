@@ -2,14 +2,21 @@ import asyncio
 import random
 from telethon import TelegramClient
 from telethon.tl.functions.messages import SendReactionRequest
-from telethon.tl.types import ReactionEmoji, InputPeerChannel
+from telethon.tl.types import ReactionEmoji
 
 from core.logger import logger
+from worker.actions.channel import ensure_membership
 
 REACTIONS = ["👍", "❤️", "🔥", "🎉", "😍", "👏", "🥰", "😁", "🤩", "💯"]
 
 
 async def react_posts(client: TelegramClient, channel: str, count: int) -> int:
+    # Membership check
+    ok = await ensure_membership(client, channel)
+    if not ok:
+        logger.warning(f"react: skip {channel}")
+        return 0
+
     try:
         entity = await client.get_entity(channel)
         posts = await client.get_messages(entity, limit=count)
