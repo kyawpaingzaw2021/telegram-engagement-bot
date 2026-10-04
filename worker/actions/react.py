@@ -11,7 +11,6 @@ REACTIONS = ["👍", "❤️", "🔥", "🎉", "😍", "👏", "🥰", "😁", "
 
 
 async def react_posts(client: TelegramClient, channel: str, count: int) -> int:
-    # Membership check
     ok = await ensure_membership(client, channel)
     if not ok:
         logger.warning(f"react: skip {channel}")

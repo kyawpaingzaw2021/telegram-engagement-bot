@@ -27,11 +27,16 @@ async def cmd_start(message: Message, state: FSMContext):
     await message.answer(WELCOME, reply_markup=main_menu())
 
 
+@router.message(F.text == "/start")
+async def start_text(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer(WELCOME, reply_markup=main_menu())
+
+
 @router.message(F.text == "❓ Help")
 async def help_reply(message: Message):
     await message.answer(
-        "❓ <b>Help</b>\n\n"
-        "Settings ထဲက Help ကို နှိပ်ပါ။",
+        "❓ <b>Help</b>\n\nSettings ထဲက Help ကို နှိပ်ပါ။",
         reply_markup=main_menu(),
     )
 
@@ -39,12 +44,19 @@ async def help_reply(message: Message):
 @router.callback_query(F.data == "back_main")
 async def back_main(call: CallbackQuery, state: FSMContext):
     await state.clear()
-    await call.message.edit_text(WELCOME, reply_markup=back_button())
+    try:
+        await call.message.edit_text(WELCOME)
+    except Exception:
+        await call.message.answer(WELCOME)
+    await call.message.answer("Menu 👇", reply_markup=main_menu())
     await call.answer()
 
 
 @router.callback_query(F.data == "cancel")
 async def cancel_cb(call: CallbackQuery, state: FSMContext):
     await state.clear()
-    await call.message.edit_text("❌ Cancelled.", reply_markup=None)
+    try:
+        await call.message.edit_text("❌ Cancelled.")
+    except Exception:
+        await call.message.answer("❌ Cancelled.")
     await call.answer()

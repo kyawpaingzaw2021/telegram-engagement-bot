@@ -5,7 +5,6 @@ class AddSessionSG(StatesGroup):
     phone = State()
     otp = State()
     password = State()
-    label = State()
 
 
 class SettingsSG(StatesGroup):

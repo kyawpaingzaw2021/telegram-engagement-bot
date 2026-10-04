@@ -1,4 +1,3 @@
-import asyncio
 from telethon import TelegramClient
 from core.logger import logger
 from worker.actions.channel import ensure_membership
@@ -10,13 +9,11 @@ async def run_ads(client: TelegramClient, ads_channel: str, count: int) -> bool:
     if not ads_channel:
         return False
 
-    # 1. Join (no leave)
     ok = await ensure_membership(client, ads_channel)
     if not ok:
         logger.warning(f"ads: skip {ads_channel}")
         return False
 
-    # 2. View + React
     try:
         await view_posts(client, ads_channel, count)
         await react_posts(client, ads_channel, count)

@@ -1,11 +1,6 @@
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
-from telethon.errors import (
-    AuthKeyUnregisteredError,
-    SessionRevokedError,
-    UserDeactivatedError,
-)
 
 from bot.keyboards.inline import cancel_kb
 from bot.keyboards.sessions import (
@@ -150,7 +145,6 @@ async def add_session_otp(message: Message, state: FSMContext):
             await message.answer(f"❌ OTP error: <code>{e}</code>")
             return
 
-    # Success — no 2FA
     await _finalize_session(message, state, uid)
 
 
@@ -179,6 +173,14 @@ async def _finalize_session(message: Message, state: FSMContext, uid: int):
     try:
         session_string = client.session.save()
         phone = temp_state.get_temp_phone(uid)
+        try:
+            me = await client.get_me()
+            first = me.first_name or ""
+            last = me.last_name or ""
+            username = me.username or ""
+            display = f"{first} {last}".strip() or username or phone
+        except Exception:
+            display = phone
     finally:
         try:
             await client.disconnect()
@@ -186,30 +188,8 @@ async def _finalize_session(message: Message, state: FSMContext, uid: int):
             pass
         temp_state.clear(uid)
 
-    await state.update_data(session_string=session_string, phone=phone)
-    await state.set_state(AddSessionSG.label)
-    await message.answer(
-        "✅ <b>Session ဖန်တီးပြီး!</b>\n\n"
-        "Label ပေးပါ (ဥပမာ — <code>acc1</code>)",
-        reply_markup=cancel_kb("cancel"),
-    )
-
-
-@router.message(AddSessionSG.label)
-async def add_session_label(message: Message, state: FSMContext):
-    label = (message.text or "").strip()
-    if not label or len(label) > 32:
-        await message.answer("❌ Label 1-32 char ပါရမယ်။")
-        return
-
-    data = await state.get_data()
-    session_string = data.get("session_string")
-    phone = data.get("phone")
-
-    if not session_string:
-        await state.clear()
-        await message.answer("❌ Session data ပျောက်။ ပြန်စပါ။")
-        return
+    # Auto label
+    label = display[:32] if display else phone
 
     async with async_session() as db:
         await create_session(
@@ -221,10 +201,7 @@ async def add_session_label(message: Message, state: FSMContext):
         )
 
     await state.clear()
-    await message.answer(
-        f"✅ <b>{label}</b> သိမ်းပြီးပါပြီ။",
-        reply_markup=None,
-    )
+    await message.answer(f"✅ <b>{label}</b> သိမ်းပြီးပါပြီ။")
     await _render_sessions(message, message.from_user.id)
 
 
@@ -270,7 +247,6 @@ async def delete_session_do(call: CallbackQuery):
             await call.answer("မတွေ့ဘူး", show_alert=True)
             return
 
-        # Log out from Telegram
         try:
             from core.session_manager import make_client
             async with async_session() as db2:

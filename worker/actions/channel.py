@@ -11,7 +11,6 @@ async def ensure_membership(client: TelegramClient, channel: str) -> bool:
         entity = await client.get_entity(channel)
         me = await client.get_me()
 
-        # Already member?
         try:
             perm = await client.get_permissions(entity, me)
             if perm is not None:
@@ -19,7 +18,6 @@ async def ensure_membership(client: TelegramClient, channel: str) -> bool:
         except Exception:
             pass
 
-        # Join
         try:
             await client(functions.channels.JoinChannelRequest(entity))
             await asyncio.sleep(random.uniform(5, 10))
